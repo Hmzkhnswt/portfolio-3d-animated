@@ -1,0 +1,1592 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>NOVA — Cinematic 3D Portfolio</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  :root {
+    --bg: #06070A;
+    --fg: #EDE8DC;
+    --accent: #FF4500;       /* signal orange */
+    --accent-2: #4DEEEA;     /* electric cyan */
+    --gold: #C9A961;
+    --muted: rgba(237,232,220,0.45);
+    --line: rgba(237,232,220,0.1);
+  }
+  html, body {
+    background: var(--bg);
+    color: var(--fg);
+    font-family: 'Inter', 'Helvetica Neue', sans-serif;
+    overflow-x: hidden;
+    cursor: none;
+  }
+
+  /* WebGL */
+  #webgl {
+    position: fixed;
+    top: 0; left: 0;
+    width: 100vw; height: 100vh;
+    z-index: 1;
+  }
+
+  /* Vignette overlay */
+  .vignette {
+    position: fixed;
+    inset: 0;
+    z-index: 4;
+    pointer-events: none;
+    background: radial-gradient(circle at center, transparent 30%, rgba(6,7,10,0.7) 100%);
+  }
+
+  /* Scanlines like a CRT monitor (Igloo Inc / sci-fi vibe) */
+  .scanlines {
+    position: fixed;
+    inset: 0;
+    z-index: 5;
+    pointer-events: none;
+    background: repeating-linear-gradient(
+      0deg,
+      rgba(0,0,0,0) 0px,
+      rgba(0,0,0,0) 2px,
+      rgba(255,255,255,0.015) 3px,
+      rgba(0,0,0,0) 4px
+    );
+  }
+
+  /* Grain */
+  .grain {
+    position: fixed;
+    inset: 0;
+    z-index: 6;
+    pointer-events: none;
+    opacity: 0.08;
+    mix-blend-mode: overlay;
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='200' height='200'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.85'/></filter><rect width='200' height='200' filter='url(%23n)' opacity='0.7'/></svg>");
+  }
+
+  /* Custom cursor */
+  .cursor-dot {
+    position: fixed;
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: var(--accent);
+    pointer-events: none;
+    z-index: 9999;
+    transform: translate(-50%, -50%);
+    transition: width 0.3s, height 0.3s, background 0.3s;
+  }
+  .cursor-ring {
+    position: fixed;
+    width: 36px; height: 36px;
+    border: 1px solid var(--accent);
+    border-radius: 50%;
+    pointer-events: none;
+    z-index: 9998;
+    transform: translate(-50%, -50%);
+    transition: width 0.4s cubic-bezier(0.16,1,0.3,1), height 0.4s cubic-bezier(0.16,1,0.3,1), border-color 0.3s;
+    mix-blend-mode: difference;
+  }
+  .cursor-dot.hover { width: 0; height: 0; }
+  .cursor-ring.hover { width: 80px; height: 80px; border-color: var(--fg); }
+
+  /* ============ LOADER ============ */
+  .loader {
+    position: fixed;
+    inset: 0;
+    background: var(--bg);
+    z-index: 1000;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    padding: 48px;
+  }
+  .loader-top, .loader-bottom {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-family: 'Courier New', monospace;
+    font-size: 11px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+  .loader-center {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    gap: 32px;
+  }
+  .loader-logo {
+    font-size: clamp(80px, 16vw, 200px);
+    font-weight: 900;
+    letter-spacing: -0.05em;
+    line-height: 1;
+    color: var(--fg);
+    position: relative;
+  }
+  .loader-logo::before {
+    content: 'NOVA';
+    position: absolute;
+    top: 0; left: 2px;
+    color: var(--accent);
+    mix-blend-mode: screen;
+    animation: glitch 3s infinite;
+    z-index: -1;
+  }
+  .loader-logo::after {
+    content: 'NOVA';
+    position: absolute;
+    top: 0; left: -2px;
+    color: var(--accent-2);
+    mix-blend-mode: screen;
+    animation: glitch 3s infinite reverse;
+    z-index: -1;
+  }
+  @keyframes glitch {
+    0%, 100% { transform: translate(0,0); }
+    20% { transform: translate(-3px, 1px); }
+    40% { transform: translate(2px, -1px); }
+    60% { transform: translate(-1px, 2px); }
+    80% { transform: translate(1px, -2px); }
+  }
+  .loader-bar {
+    width: 320px;
+    height: 1px;
+    background: var(--line);
+    overflow: hidden;
+    position: relative;
+  }
+  .loader-fill {
+    position: absolute;
+    left: 0; top: 0; height: 100%;
+    background: var(--accent);
+    width: 0%;
+  }
+  .loader-num {
+    font-family: 'Courier New', monospace;
+    font-size: 14px;
+    letter-spacing: 0.2em;
+    color: var(--accent);
+  }
+
+  /* ============ NAV ============ */
+  nav {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    z-index: 100;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 28px 48px;
+    mix-blend-mode: difference;
+    font-size: 11px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+  }
+  .logo {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-weight: 800;
+    font-size: 18px;
+    letter-spacing: -0.02em;
+  }
+  .logo-mark {
+    width: 10px; height: 10px;
+    background: var(--accent);
+    border-radius: 50%;
+    box-shadow: 0 0 12px var(--accent);
+    animation: pulse-glow 2s ease-in-out infinite;
+  }
+  @keyframes pulse-glow {
+    0%, 100% { transform: scale(1); opacity: 1; }
+    50% { transform: scale(1.4); opacity: 0.6; }
+  }
+  .nav-links { display: flex; gap: 32px; }
+  .nav-links a {
+    color: var(--fg);
+    text-decoration: none;
+    transition: color 0.3s;
+    position: relative;
+  }
+  .nav-links a::before {
+    content: counter(navlink, decimal-leading-zero) ' ';
+    color: var(--accent);
+    margin-right: 4px;
+    counter-increment: navlink;
+  }
+  .nav-links { counter-reset: navlink; }
+
+  /* ============ HUD ============ */
+  .hud-corner {
+    position: fixed;
+    z-index: 100;
+    font-family: 'Courier New', monospace;
+    font-size: 10px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--muted);
+    mix-blend-mode: difference;
+  }
+  .hud-bl { bottom: 24px; left: 48px; display: flex; flex-direction: column; gap: 6px; }
+  .hud-br { bottom: 24px; right: 48px; display: flex; flex-direction: column; gap: 6px; align-items: flex-end; }
+  .hud-bl .live { color: var(--accent); }
+  .hud-bl .live::before {
+    content: '●';
+    margin-right: 6px;
+    animation: blink 1.2s infinite;
+  }
+  @keyframes blink { 50% { opacity: 0.3; } }
+
+  /* corner brackets */
+  .bracket {
+    position: fixed;
+    width: 24px; height: 24px;
+    border: 1px solid var(--accent);
+    z-index: 50;
+    pointer-events: none;
+    mix-blend-mode: difference;
+  }
+  .bracket.tl { top: 16px; left: 16px; border-right: none; border-bottom: none; }
+  .bracket.tr { top: 16px; right: 16px; border-left: none; border-bottom: none; }
+  .bracket.bl { bottom: 16px; left: 16px; border-right: none; border-top: none; }
+  .bracket.br { bottom: 16px; right: 16px; border-left: none; border-top: none; }
+
+  /* ============ CONTENT ============ */
+  .content { position: relative; z-index: 10; }
+  section {
+    padding: 0 48px;
+    position: relative;
+  }
+
+  /* HERO */
+  .hero {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding-top: 120px;
+    padding-bottom: 120px;
+  }
+  .hero-tag {
+    font-family: 'Courier New', monospace;
+    font-size: 11px;
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 32px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .hero-tag::before {
+    content: '';
+    width: 40px; height: 1px;
+    background: var(--accent);
+  }
+  .hero h1 {
+    font-size: clamp(72px, 14vw, 220px);
+    line-height: 0.85;
+    font-weight: 900;
+    letter-spacing: -0.05em;
+    text-transform: uppercase;
+  }
+  .hero h1 .word {
+    display: inline-block;
+    overflow: hidden;
+    line-height: 0.9;
+  }
+  .hero h1 .char {
+    display: inline-block;
+    transition: transform 0.4s cubic-bezier(0.16,1,0.3,1);
+  }
+  .hero h1 .word:hover .char {
+    transform: translateY(-12px);
+    color: var(--accent);
+  }
+  .hero h1 .outline {
+    -webkit-text-stroke: 2px var(--fg);
+    color: transparent;
+  }
+  .hero h1 .italic {
+    font-style: italic;
+    font-family: 'Times New Roman', serif;
+    font-weight: 400;
+    color: var(--accent);
+  }
+  .hero-bottom {
+    margin-top: 80px;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    gap: 48px;
+    flex-wrap: wrap;
+  }
+  .hero-desc {
+    max-width: 380px;
+    font-size: 14px;
+    line-height: 1.6;
+    color: var(--muted);
+  }
+  .hero-stats {
+    display: flex;
+    gap: 48px;
+    font-family: 'Courier New', monospace;
+    font-size: 11px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+  }
+  .hero-stats div { display: flex; flex-direction: column; gap: 4px; }
+  .hero-stats strong {
+    color: var(--fg);
+    font-size: 24px;
+    font-family: 'Inter', sans-serif;
+    letter-spacing: -0.02em;
+    font-weight: 600;
+  }
+  .hero-stats span { color: var(--muted); }
+
+  /* SCROLL PROMPT */
+  .scroll-prompt {
+    position: absolute;
+    bottom: 24px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-family: 'Courier New', monospace;
+    font-size: 10px;
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+    color: var(--muted);
+    text-align: center;
+  }
+  .scroll-prompt::after {
+    content: '';
+    display: block;
+    width: 1px;
+    height: 32px;
+    background: linear-gradient(to bottom, var(--accent), transparent);
+    margin: 12px auto 0;
+    animation: scroll-line 2s ease-in-out infinite;
+  }
+  @keyframes scroll-line {
+    0%, 100% { transform: scaleY(1); }
+    50% { transform: scaleY(0.4); }
+  }
+
+  /* ============ MARQUEE ============ */
+  .marquee {
+    overflow: hidden;
+    white-space: nowrap;
+    border-top: 1px solid var(--line);
+    border-bottom: 1px solid var(--line);
+    padding: 28px 0;
+    margin: 80px 0;
+  }
+  .marquee-track {
+    display: inline-block;
+    animation: scroll-x 30s linear infinite;
+    font-size: clamp(40px, 7vw, 100px);
+    font-weight: 900;
+    letter-spacing: -0.03em;
+    text-transform: uppercase;
+    font-style: italic;
+  }
+  .marquee-track span { margin: 0 32px; display: inline-block; }
+  .marquee-track .dot { color: var(--accent); font-style: normal; }
+  @keyframes scroll-x { to { transform: translateX(-50%); } }
+
+  /* ============ WORK SECTION ============ */
+  .section-padding { padding: 160px 48px; }
+  .section-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    margin-bottom: 80px;
+    border-bottom: 1px solid var(--line);
+    padding-bottom: 32px;
+    gap: 32px;
+    flex-wrap: wrap;
+  }
+  .section-num {
+    font-family: 'Courier New', monospace;
+    font-size: 11px;
+    letter-spacing: 0.3em;
+    color: var(--accent);
+    text-transform: uppercase;
+    margin-bottom: 16px;
+  }
+  .section-title {
+    font-size: clamp(48px, 8vw, 120px);
+    font-weight: 900;
+    letter-spacing: -0.04em;
+    text-transform: uppercase;
+    line-height: 0.9;
+  }
+  .section-title .italic {
+    font-style: italic;
+    font-family: 'Times New Roman', serif;
+    font-weight: 400;
+    color: var(--accent);
+  }
+  .section-meta {
+    font-size: 13px;
+    line-height: 1.6;
+    color: var(--muted);
+    max-width: 280px;
+  }
+
+  /* PROJECTS */
+  .projects-list { display: flex; flex-direction: column; }
+  .project {
+    display: grid;
+    grid-template-columns: 80px 1fr 240px 1fr 80px;
+    gap: 32px;
+    align-items: center;
+    padding: 40px 0;
+    border-bottom: 1px solid var(--line);
+    cursor: none;
+    position: relative;
+    transition: padding 0.6s cubic-bezier(0.16,1,0.3,1);
+  }
+  .project::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(90deg, transparent, var(--accent) 50%, transparent);
+    transform: scaleX(0);
+    transform-origin: center;
+    opacity: 0.08;
+    transition: transform 0.6s cubic-bezier(0.16,1,0.3,1);
+    pointer-events: none;
+  }
+  .project:hover {
+    padding-left: 32px;
+    padding-right: 32px;
+  }
+  .project:hover::before { transform: scaleX(1); }
+  .project:hover .project-title { color: var(--accent); }
+  .project:hover .project-arrow { transform: translateX(8px); color: var(--accent); }
+  .project:hover .project-num { color: var(--accent); }
+
+  .project-num {
+    font-family: 'Courier New', monospace;
+    font-size: 13px;
+    color: var(--muted);
+    transition: color 0.4s;
+  }
+  .project-title {
+    font-size: clamp(28px, 3.5vw, 52px);
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    text-transform: uppercase;
+    transition: color 0.4s;
+  }
+  .project-title .italic {
+    font-style: italic;
+    font-family: 'Times New Roman', serif;
+    font-weight: 400;
+  }
+  .project-tag {
+    font-family: 'Courier New', monospace;
+    font-size: 11px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+  .project-year {
+    font-family: 'Courier New', monospace;
+    font-size: 13px;
+    color: var(--muted);
+  }
+  .project-arrow {
+    font-size: 20px;
+    text-align: right;
+    transition: transform 0.4s, color 0.4s;
+    color: var(--muted);
+  }
+
+  /* ============ PROCESS SECTION ============ */
+  .process-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 48px;
+    margin-top: 64px;
+  }
+  .process-card {
+    border: 1px solid var(--line);
+    padding: 40px 32px;
+    transition: all 0.4s;
+    position: relative;
+    overflow: hidden;
+  }
+  .process-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    background: linear-gradient(135deg, transparent, rgba(255,69,0,0.05));
+    opacity: 0;
+    transition: opacity 0.4s;
+  }
+  .process-card:hover { border-color: var(--accent); }
+  .process-card:hover::before { opacity: 1; }
+  .process-num {
+    font-family: 'Courier New', monospace;
+    font-size: 11px;
+    letter-spacing: 0.2em;
+    color: var(--accent);
+    margin-bottom: 24px;
+  }
+  .process-title {
+    font-size: 28px;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    margin-bottom: 16px;
+    text-transform: uppercase;
+  }
+  .process-title .italic {
+    font-style: italic;
+    font-family: 'Times New Roman', serif;
+    font-weight: 400;
+    color: var(--accent);
+  }
+  .process-desc {
+    font-size: 13px;
+    line-height: 1.7;
+    color: var(--muted);
+  }
+
+  /* ============ ABOUT ============ */
+  .about-grid {
+    display: grid;
+    grid-template-columns: 1.4fr 1fr;
+    gap: 80px;
+    align-items: start;
+  }
+  .about-text {
+    font-size: clamp(22px, 2.4vw, 32px);
+    line-height: 1.4;
+    letter-spacing: -0.01em;
+    font-weight: 400;
+  }
+  .about-text .highlight { color: var(--accent); }
+  .about-text .italic {
+    font-style: italic;
+    font-family: 'Times New Roman', serif;
+  }
+  .about-side { display: flex; flex-direction: column; gap: 40px; }
+  .stat {
+    border-top: 1px solid var(--line);
+    padding-top: 16px;
+  }
+  .stat-num {
+    font-size: clamp(56px, 7vw, 96px);
+    font-weight: 900;
+    color: var(--fg);
+    line-height: 0.9;
+    letter-spacing: -0.04em;
+    margin-bottom: 8px;
+  }
+  .stat-label {
+    font-family: 'Courier New', monospace;
+    font-size: 11px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+
+  /* Skills marquee */
+  .skills {
+    margin-top: 100px;
+    overflow: hidden;
+  }
+  .skills-track {
+    display: flex;
+    gap: 16px;
+    animation: scroll-x 35s linear infinite;
+    width: max-content;
+  }
+  .skill-pill {
+    padding: 12px 24px;
+    border: 1px solid var(--line);
+    border-radius: 100px;
+    font-family: 'Courier New', monospace;
+    font-size: 12px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    white-space: nowrap;
+    color: var(--fg);
+    background: rgba(237,232,220,0.02);
+    backdrop-filter: blur(8px);
+  }
+
+  /* ============ CONTACT ============ */
+  .contact {
+    min-height: 100vh;
+    padding: 160px 48px 80px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+  }
+  .contact-headline {
+    font-size: clamp(64px, 12vw, 200px);
+    font-weight: 900;
+    line-height: 0.9;
+    letter-spacing: -0.05em;
+    text-transform: uppercase;
+  }
+  .contact-headline .italic {
+    font-style: italic;
+    font-family: 'Times New Roman', serif;
+    font-weight: 400;
+    color: var(--accent);
+  }
+  .contact-headline a {
+    color: var(--fg);
+    text-decoration: none;
+    position: relative;
+    display: inline-block;
+    transition: color 0.4s;
+  }
+  .contact-headline a:hover { color: var(--accent); }
+  .contact-headline a::after {
+    content: "→";
+    margin-left: 24px;
+    display: inline-block;
+    transition: transform 0.4s;
+  }
+  .contact-headline a:hover::after { transform: translateX(16px); }
+
+  .contact-grid {
+    margin-top: 120px;
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 32px;
+    border-top: 1px solid var(--line);
+    padding-top: 32px;
+  }
+  .contact-item {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .contact-item .label {
+    font-family: 'Courier New', monospace;
+    font-size: 10px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+  .contact-item a {
+    color: var(--fg);
+    text-decoration: none;
+    font-size: 16px;
+    font-weight: 500;
+    transition: color 0.3s;
+  }
+  .contact-item a:hover { color: var(--accent); }
+
+  .footer {
+    margin-top: 120px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-family: 'Courier New', monospace;
+    font-size: 11px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--muted);
+    border-top: 1px solid var(--line);
+    padding-top: 24px;
+    flex-wrap: wrap;
+    gap: 16px;
+  }
+
+  /* Responsive */
+  @media (max-width: 768px) {
+    body { cursor: auto; }
+    .cursor-dot, .cursor-ring { display: none; }
+    nav, section, .contact { padding-left: 20px; padding-right: 20px; }
+    .section-padding { padding: 100px 20px; }
+    .hud-bl { left: 20px; bottom: 20px; }
+    .hud-br { right: 20px; bottom: 20px; }
+    .nav-links { display: none; }
+    .project { grid-template-columns: 40px 1fr 60px; gap: 16px; }
+    .project-tag, .project-arrow { display: none; }
+    .about-grid { grid-template-columns: 1fr; gap: 48px; }
+    .process-grid { grid-template-columns: 1fr; gap: 24px; }
+    .contact-grid { grid-template-columns: 1fr 1fr; }
+    .hero-bottom { flex-direction: column; align-items: flex-start; }
+    .hero-stats { gap: 24px; flex-wrap: wrap; }
+  }
+</style>
+</head>
+<body>
+
+<!-- Loader -->
+<div class="loader" id="loader">
+  <div class="loader-top">
+    <span>NOVA / 26</span>
+    <span id="loader-time">00:00:00 UTC</span>
+  </div>
+  <div class="loader-center">
+    <div class="loader-logo">NOVA</div>
+    <div class="loader-bar"><div class="loader-fill" id="loader-fill"></div></div>
+    <div class="loader-num" id="loader-num">000 / 100</div>
+  </div>
+  <div class="loader-bottom">
+    <span>INITIALIZING WEBGL</span>
+    <span>v.2.0.26</span>
+  </div>
+</div>
+
+<!-- WebGL canvas -->
+<canvas id="webgl"></canvas>
+<div class="vignette"></div>
+<div class="scanlines"></div>
+<div class="grain"></div>
+
+<!-- Corner brackets -->
+<div class="bracket tl"></div>
+<div class="bracket tr"></div>
+<div class="bracket bl"></div>
+<div class="bracket br"></div>
+
+<!-- Cursor -->
+<div class="cursor-dot" id="cursor-dot"></div>
+<div class="cursor-ring" id="cursor-ring"></div>
+
+<!-- HUD -->
+<div class="hud-corner hud-bl">
+  <div class="live">SYS / ONLINE</div>
+  <div id="hud-time">00:00:00 UTC</div>
+  <div>52.5200°N · 13.4050°E</div>
+</div>
+<div class="hud-corner hud-br">
+  <div>SCROLL <span id="hud-scroll">0%</span></div>
+  <div>CHAPTER <span id="hud-chapter">01</span> / 04</div>
+  <div id="hud-scene">SCENE — APPROACH</div>
+</div>
+
+<!-- Nav -->
+<nav>
+  <div class="logo"><span class="logo-mark"></span> NOVA/STUDIO</div>
+  <div class="nav-links">
+    <a href="#work" data-link>Work</a>
+    <a href="#about" data-link>About</a>
+    <a href="#contact" data-link>Index</a>
+  </div>
+</nav>
+
+<!-- Content -->
+<div class="content">
+
+  <!-- HERO -->
+  <section class="hero">
+    <div class="hero-tag">N°001 — Creative Developer · MMXXVI</div>
+    <h1>
+      <div class="word"><span class="char">M</span><span class="char">a</span><span class="char">k</span><span class="char">i</span><span class="char">n</span><span class="char">g</span></div><br>
+      <div class="word"><span class="italic">interactive</span></div><br>
+      <div class="word outline"><span class="char">w</span><span class="char">o</span><span class="char">r</span><span class="char">l</span><span class="char">d</span><span class="char">s</span></div>
+    </h1>
+    <div class="hero-bottom">
+      <div class="hero-desc">
+        Independent creative developer building cinematic 3D experiences for ambitious brands and artists since 2019.
+      </div>
+      <div class="hero-stats">
+        <div><strong>87</strong><span>Projects shipped</span></div>
+        <div><strong>14</strong><span>Awards earned</span></div>
+        <div><strong>23</strong><span>Countries served</span></div>
+      </div>
+    </div>
+    <div class="scroll-prompt">Scroll to explore</div>
+  </section>
+
+  <!-- Marquee -->
+  <div class="marquee">
+    <div class="marquee-track">
+      <span>Three.js</span><span class="dot">✦</span>
+      <span><i>WebGL</i></span><span class="dot">✦</span>
+      <span>Shaders</span><span class="dot">✦</span>
+      <span><i>Motion</i></span><span class="dot">✦</span>
+      <span>3D</span><span class="dot">✦</span>
+      <span><i>Interaction</i></span><span class="dot">✦</span>
+      <span>Three.js</span><span class="dot">✦</span>
+      <span><i>WebGL</i></span><span class="dot">✦</span>
+      <span>Shaders</span><span class="dot">✦</span>
+      <span><i>Motion</i></span><span class="dot">✦</span>
+      <span>3D</span><span class="dot">✦</span>
+      <span><i>Interaction</i></span><span class="dot">✦</span>
+    </div>
+  </div>
+
+  <!-- WORK -->
+  <section class="section-padding" id="work">
+    <div class="section-head">
+      <div>
+        <div class="section-num">[ N°002 / Selected Projects ]</div>
+        <div class="section-title">Recent <span class="italic">work</span></div>
+      </div>
+      <div class="section-meta">
+        A curated selection of digital experiences built between 2023 and 2026, spanning brand sites, product launches, and interactive installations.
+      </div>
+    </div>
+
+    <div class="projects-list" id="projects-list"></div>
+  </section>
+
+  <!-- PROCESS -->
+  <section class="section-padding">
+    <div class="section-head">
+      <div>
+        <div class="section-num">[ N°003 / Approach ]</div>
+        <div class="section-title">The <span class="italic">process</span></div>
+      </div>
+      <div class="section-meta">
+        Every project follows the same rigorous arc — from research and concept to shaders and shipping.
+      </div>
+    </div>
+
+    <div class="process-grid">
+      <div class="process-card">
+        <div class="process-num">PHASE 01</div>
+        <div class="process-title">Research <span class="italic">&amp; concept</span></div>
+        <div class="process-desc">Deep dives into your brand, audience, and category. References, mood, narrative arc. The thinking before the making.</div>
+      </div>
+      <div class="process-card">
+        <div class="process-num">PHASE 02</div>
+        <div class="process-title">Design <span class="italic">&amp; motion</span></div>
+        <div class="process-desc">Visual systems, type, color, and the choreography of every transition. Built to feel inevitable, not decorated.</div>
+      </div>
+      <div class="process-card">
+        <div class="process-num">PHASE 03</div>
+        <div class="process-title">Build <span class="italic">&amp; ship</span></div>
+        <div class="process-desc">Three.js, GSAP, GLSL shaders, and modern frameworks. Performance is a creative constraint, not an afterthought.</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ABOUT -->
+  <section class="section-padding" id="about">
+    <div class="section-head">
+      <div>
+        <div class="section-num">[ N°004 / About ]</div>
+        <div class="section-title">The <span class="italic">studio</span></div>
+      </div>
+    </div>
+    <div class="about-grid">
+      <div class="about-text" data-reveal>
+        I'm an independent creative developer based in Berlin, working at the intersection of <span class="highlight italic">code, motion, and 3D</span>. For seven years I've built digital experiences for brands, artists, and studios — from interactive product launches to award-winning portfolio sites. My focus is on the small details: timing, easing, the weight of a font, the way a transition lands.
+      </div>
+      <div class="about-side">
+        <div class="stat">
+          <div class="stat-num">87</div>
+          <div class="stat-label">Projects shipped</div>
+        </div>
+        <div class="stat">
+          <div class="stat-num">14</div>
+          <div class="stat-label">Awwwards · FWA wins</div>
+        </div>
+        <div class="stat">
+          <div class="stat-num">07</div>
+          <div class="stat-label">Years in practice</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="skills">
+      <div class="skills-track" id="skills-track"></div>
+    </div>
+  </section>
+
+  <!-- CONTACT -->
+  <section class="contact" id="contact">
+    <div class="section-head">
+      <div>
+        <div class="section-num">[ N°005 / Contact ]</div>
+        <div class="section-title">Get in <span class="italic">touch</span></div>
+      </div>
+    </div>
+
+    <div class="contact-headline">
+      Have a brief?<br>
+      <a href="mailto:hello@nova.studio">Say hello</a>
+    </div>
+
+    <div class="contact-grid">
+      <div class="contact-item">
+        <div class="label">Email</div>
+        <a href="mailto:hello@nova.studio">hello@nova.studio</a>
+      </div>
+      <div class="contact-item">
+        <div class="label">Twitter / X</div>
+        <a href="#">@novastudio</a>
+      </div>
+      <div class="contact-item">
+        <div class="label">Are.na</div>
+        <a href="#">/novastudio</a>
+      </div>
+      <div class="contact-item">
+        <div class="label">GitHub</div>
+        <a href="#">/novastudio</a>
+      </div>
+    </div>
+
+    <div class="footer">
+      <span>© MMXXVI — NOVA Studio. Berlin / Tokyo.</span>
+      <span>Built with Three.js · GSAP · Lenis</span>
+    </div>
+  </section>
+
+</div>
+
+<!-- LIBRARIES -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@studio-freight/lenis@1.0.42/dist/lenis.min.js"></script>
+
+<script>
+gsap.registerPlugin(ScrollTrigger);
+
+// ============================================================
+// LENIS SMOOTH SCROLL
+// ============================================================
+const lenis = new Lenis({
+  duration: 1.6,
+  easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
+  smoothWheel: true,
+  wheelMultiplier: 1,
+});
+lenis.on('scroll', ScrollTrigger.update);
+gsap.ticker.add((time) => { lenis.raf(time * 1000); });
+gsap.ticker.lagSmoothing(0);
+
+// ============================================================
+// THREE.JS SETUP — Cinematic 3D world
+// ============================================================
+const canvas = document.getElementById('webgl');
+const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+renderer.setSize(window.innerWidth, window.innerHeight);
+renderer.setClearColor(0x06070A, 1);
+
+const scene = new THREE.Scene();
+scene.fog = new THREE.FogExp2(0x06070A, 0.04);
+
+const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 200);
+camera.position.set(0, 0, 10);
+
+// Lights
+scene.add(new THREE.AmbientLight(0x404040, 0.5));
+const keyLight = new THREE.DirectionalLight(0xFF4500, 1.5);
+keyLight.position.set(5, 5, 5);
+scene.add(keyLight);
+const rimLight = new THREE.PointLight(0x4DEEEA, 2, 20);
+rimLight.position.set(-5, -2, 3);
+scene.add(rimLight);
+const topLight = new THREE.PointLight(0xC9A961, 1, 15);
+topLight.position.set(0, 8, 0);
+scene.add(topLight);
+
+// ====================================================
+// CUSTOM SHADER MATERIAL — distorted, fresnel, animated
+// ====================================================
+const vertexShader = `
+  varying vec2 vUv;
+  varying vec3 vNormal;
+  varying vec3 vPos;
+  varying vec3 vWorldPos;
+  uniform float uTime;
+  uniform float uScroll;
+  uniform float uHover;
+
+  // Simplex noise (Stefan Gustavson)
+  vec3 mod289(vec3 x){return x-floor(x*(1.0/289.0))*289.0;}
+  vec4 mod289(vec4 x){return x-floor(x*(1.0/289.0))*289.0;}
+  vec4 permute(vec4 x){return mod289(((x*34.0)+1.0)*x);}
+  vec4 taylorInvSqrt(vec4 r){return 1.79284291400159-0.85373472095314*r;}
+  float snoise(vec3 v){
+    const vec2 C=vec2(1.0/6.0,1.0/3.0); const vec4 D=vec4(0.0,0.5,1.0,2.0);
+    vec3 i=floor(v+dot(v,C.yyy)); vec3 x0=v-i+dot(i,C.xxx);
+    vec3 g=step(x0.yzx,x0.xyz); vec3 l=1.0-g;
+    vec3 i1=min(g.xyz,l.zxy); vec3 i2=max(g.xyz,l.zxy);
+    vec3 x1=x0-i1+C.xxx; vec3 x2=x0-i2+C.yyy; vec3 x3=x0-D.yyy;
+    i=mod289(i);
+    vec4 p=permute(permute(permute(i.z+vec4(0.0,i1.z,i2.z,1.0))+i.y+vec4(0.0,i1.y,i2.y,1.0))+i.x+vec4(0.0,i1.x,i2.x,1.0));
+    float n_=0.142857142857; vec3 ns=n_*D.wyz-D.xzx;
+    vec4 j=p-49.0*floor(p*ns.z*ns.z);
+    vec4 x_=floor(j*ns.z); vec4 y_=floor(j-7.0*x_);
+    vec4 x=x_*ns.x+ns.yyyy; vec4 y=y_*ns.x+ns.yyyy;
+    vec4 h=1.0-abs(x)-abs(y);
+    vec4 b0=vec4(x.xy,y.xy); vec4 b1=vec4(x.zw,y.zw);
+    vec4 s0=floor(b0)*2.0+1.0; vec4 s1=floor(b1)*2.0+1.0;
+    vec4 sh=-step(h,vec4(0.0));
+    vec4 a0=b0.xzyw+s0.xzyw*sh.xxyy; vec4 a1=b1.xzyw+s1.xzyw*sh.zzww;
+    vec3 p0=vec3(a0.xy,h.x); vec3 p1=vec3(a0.zw,h.y);
+    vec3 p2=vec3(a1.xy,h.z); vec3 p3=vec3(a1.zw,h.w);
+    vec4 norm=taylorInvSqrt(vec4(dot(p0,p0),dot(p1,p1),dot(p2,p2),dot(p3,p3)));
+    p0*=norm.x; p1*=norm.y; p2*=norm.z; p3*=norm.w;
+    vec4 m=max(0.6-vec4(dot(x0,x0),dot(x1,x1),dot(x2,x2),dot(x3,x3)),0.0);
+    m=m*m; return 42.0*dot(m*m,vec4(dot(p0,x0),dot(p1,x1),dot(p2,x2),dot(p3,x3)));
+  }
+
+  void main() {
+    vUv = uv;
+    vNormal = normalize(normalMatrix * normal);
+    float t = uTime * 0.4;
+    float n1 = snoise(position * 1.2 + vec3(t));
+    float n2 = snoise(position * 2.5 - vec3(t * 0.7)) * 0.4;
+    float displacement = (n1 + n2) * (0.4 + uScroll * 0.4 + uHover * 0.3);
+    vec3 newPos = position + normal * displacement;
+    vPos = newPos;
+    vec4 worldPos = modelMatrix * vec4(newPos, 1.0);
+    vWorldPos = worldPos.xyz;
+    gl_Position = projectionMatrix * viewMatrix * worldPos;
+  }
+`;
+
+const fragmentShader = `
+  varying vec2 vUv;
+  varying vec3 vNormal;
+  varying vec3 vPos;
+  varying vec3 vWorldPos;
+  uniform float uTime;
+  uniform vec3 uColorA;
+  uniform vec3 uColorB;
+  uniform vec3 uColorC;
+
+  void main() {
+    vec3 viewDir = normalize(cameraPosition - vWorldPos);
+    float fresnel = 1.0 - max(dot(viewDir, vNormal), 0.0);
+    fresnel = pow(fresnel, 1.8);
+
+    float wave = sin(vPos.y * 3.0 + uTime * 0.8) * 0.5 + 0.5;
+    float wave2 = cos(vPos.x * 2.0 - uTime * 0.5) * 0.5 + 0.5;
+
+    vec3 base = mix(uColorA, uColorB, wave);
+    base = mix(base, uColorC, wave2 * 0.4);
+
+    // Iridescent rim
+    vec3 rim = mix(uColorB, vec3(1.0), fresnel);
+    vec3 finalColor = mix(base, rim, fresnel * 0.9);
+
+    // Inner glow
+    float coreGlow = pow(1.0 - fresnel, 4.0) * 0.3;
+    finalColor += uColorA * coreGlow;
+
+    gl_FragColor = vec4(finalColor, 0.92);
+  }
+`;
+
+const shaderUniforms = {
+  uTime: { value: 0 },
+  uScroll: { value: 0 },
+  uHover: { value: 0 },
+  uColorA: { value: new THREE.Color('#FF4500') },
+  uColorB: { value: new THREE.Color('#4DEEEA') },
+  uColorC: { value: new THREE.Color('#C9A961') },
+};
+
+const shaderMaterial = new THREE.ShaderMaterial({
+  vertexShader, fragmentShader,
+  uniforms: shaderUniforms,
+  transparent: true,
+});
+
+// CENTRAL OBJECT — high-poly icosahedron with shader
+const centralObject = new THREE.Mesh(
+  new THREE.IcosahedronGeometry(1.6, 80),
+  shaderMaterial
+);
+scene.add(centralObject);
+
+// Wireframe cage outside
+const cage = new THREE.Mesh(
+  new THREE.IcosahedronGeometry(2.6, 1),
+  new THREE.MeshBasicMaterial({ color: 0xFF4500, wireframe: true, transparent: true, opacity: 0.12 })
+);
+scene.add(cage);
+
+// Outer ring — torus that orbits
+const ring = new THREE.Mesh(
+  new THREE.TorusGeometry(3.2, 0.015, 16, 200),
+  new THREE.MeshBasicMaterial({ color: 0x4DEEEA, transparent: true, opacity: 0.5 })
+);
+ring.rotation.x = Math.PI / 2;
+scene.add(ring);
+
+const ring2 = new THREE.Mesh(
+  new THREE.TorusGeometry(3.6, 0.008, 16, 200),
+  new THREE.MeshBasicMaterial({ color: 0xC9A961, transparent: true, opacity: 0.4 })
+);
+scene.add(ring2);
+
+// FLOATING SATELLITES — small geometric shapes orbiting
+const satellites = [];
+const satGeometries = [
+  new THREE.OctahedronGeometry(0.15),
+  new THREE.TetrahedronGeometry(0.18),
+  new THREE.BoxGeometry(0.2, 0.2, 0.2),
+  new THREE.IcosahedronGeometry(0.14),
+];
+const satColors = [0xFF4500, 0x4DEEEA, 0xC9A961, 0xEDE8DC];
+for (let i = 0; i < 12; i++) {
+  const geo = satGeometries[i % satGeometries.length];
+  const mat = new THREE.MeshStandardMaterial({
+    color: satColors[i % satColors.length],
+    metalness: 0.8,
+    roughness: 0.2,
+    emissive: satColors[i % satColors.length],
+    emissiveIntensity: 0.2,
+  });
+  const sat = new THREE.Mesh(geo, mat);
+  const angle = (i / 12) * Math.PI * 2;
+  const radius = 4 + Math.random() * 2;
+  sat.userData = {
+    angle, radius,
+    speedY: 0.2 + Math.random() * 0.3,
+    yOffset: (Math.random() - 0.5) * 4,
+    rotSpeed: { x: Math.random() * 0.02, y: Math.random() * 0.02 },
+  };
+  scene.add(sat);
+  satellites.push(sat);
+}
+
+// PARTICLE FIELD — depth and atmosphere
+const particleGeo = new THREE.BufferGeometry();
+const particleCount = 2000;
+const particlePositions = new Float32Array(particleCount * 3);
+const particleColors = new Float32Array(particleCount * 3);
+const colorPalette = [
+  new THREE.Color(0xFF4500),
+  new THREE.Color(0x4DEEEA),
+  new THREE.Color(0xC9A961),
+  new THREE.Color(0xEDE8DC),
+];
+for (let i = 0; i < particleCount; i++) {
+  const r = 8 + Math.random() * 30;
+  const theta = Math.random() * Math.PI * 2;
+  const phi = Math.acos(2 * Math.random() - 1);
+  particlePositions[i*3]   = r * Math.sin(phi) * Math.cos(theta);
+  particlePositions[i*3+1] = r * Math.sin(phi) * Math.sin(theta);
+  particlePositions[i*3+2] = r * Math.cos(phi);
+  const c = colorPalette[Math.floor(Math.random() * colorPalette.length)];
+  particleColors[i*3] = c.r; particleColors[i*3+1] = c.g; particleColors[i*3+2] = c.b;
+}
+particleGeo.setAttribute('position', new THREE.BufferAttribute(particlePositions, 3));
+particleGeo.setAttribute('color', new THREE.BufferAttribute(particleColors, 3));
+const particleMat = new THREE.PointsMaterial({
+  size: 0.04, transparent: true, opacity: 0.7,
+  sizeAttenuation: true, vertexColors: true,
+  blending: THREE.AdditiveBlending,
+});
+const particles = new THREE.Points(particleGeo, particleMat);
+scene.add(particles);
+
+// GRID FLOOR — adds depth and architecture
+const gridHelper = new THREE.GridHelper(40, 40, 0xFF4500, 0xFF4500);
+gridHelper.position.y = -4;
+gridHelper.material.transparent = true;
+gridHelper.material.opacity = 0.12;
+scene.add(gridHelper);
+
+// ====================================================
+// SCROLL-DRIVEN CAMERA "FILM" — 4 cinematic chapters
+// Inspired by Igloo Inc / Messenger scene transitions
+// ====================================================
+const cameraStates = [
+  // Chapter 1: APPROACH — wide establishing shot
+  { pos: [0, 0, 10],   look: [0, 0, 0],   objPos: [3, 0, 0],   objScale: 1.0, label: 'APPROACH' },
+  // Chapter 2: ORBIT — circling the object, lower
+  { pos: [-4, -1, 7],  look: [0, 0, 0],   objPos: [0, -0.5, 0], objScale: 1.2, label: 'ORBIT' },
+  // Chapter 3: ENTER — pushing in close, top-down
+  { pos: [3, 3, 5],    look: [0, 0, 0],   objPos: [-1, 0, 0],  objScale: 1.4, label: 'ENTER' },
+  // Chapter 4: TRANSCEND — pulling back, the object recedes
+  { pos: [0, 1, 14],   look: [0, 0, -2],  objPos: [0, 1, -3],  objScale: 0.7, label: 'TRANSCEND' },
+];
+
+let scrollProgress = 0;
+let currentChapter = 0;
+
+lenis.on('scroll', ({ progress }) => {
+  scrollProgress = progress;
+  shaderUniforms.uScroll.value = progress;
+  document.getElementById('hud-scroll').textContent = `${Math.round(progress * 100)}%`;
+
+  // Determine chapter
+  const ch = Math.min(3, Math.floor(progress * 4));
+  if (ch !== currentChapter) {
+    currentChapter = ch;
+    document.getElementById('hud-chapter').textContent = String(ch + 1).padStart(2, '0');
+    document.getElementById('hud-scene').textContent = `SCENE — ${cameraStates[ch].label}`;
+  }
+});
+
+function lerp(a, b, t) { return a + (b - a) * t; }
+function lerpVec3(a, b, t) {
+  return [lerp(a[0], b[0], t), lerp(a[1], b[1], t), lerp(a[2], b[2], t)];
+}
+
+function getCameraState(progress) {
+  const total = cameraStates.length - 1;
+  const segment = progress * total;
+  const i = Math.min(total - 1, Math.floor(segment));
+  const localT = segment - i;
+  // Smooth ease
+  const easedT = localT * localT * (3 - 2 * localT);
+  const a = cameraStates[i];
+  const b = cameraStates[i + 1];
+  return {
+    pos: lerpVec3(a.pos, b.pos, easedT),
+    look: lerpVec3(a.look, b.look, easedT),
+    objPos: lerpVec3(a.objPos, b.objPos, easedT),
+    objScale: lerp(a.objScale, b.objScale, easedT),
+  };
+}
+
+// Mouse parallax
+let mouseX = 0, mouseY = 0;
+window.addEventListener('mousemove', (e) => {
+  mouseX = (e.clientX / window.innerWidth - 0.5);
+  mouseY = (e.clientY / window.innerHeight - 0.5);
+});
+
+// Animation loop
+const clock = new THREE.Clock();
+const lookTarget = new THREE.Vector3();
+
+function animate() {
+  const t = clock.getElapsedTime();
+  shaderUniforms.uTime.value = t;
+
+  // Get current camera state from scroll
+  const state = getCameraState(scrollProgress);
+
+  // Smooth camera movement with mouse parallax
+  const targetCamX = state.pos[0] + mouseX * 0.6;
+  const targetCamY = state.pos[1] - mouseY * 0.6;
+  camera.position.x += (targetCamX - camera.position.x) * 0.06;
+  camera.position.y += (targetCamY - camera.position.y) * 0.06;
+  camera.position.z += (state.pos[2] - camera.position.z) * 0.06;
+  lookTarget.set(state.look[0], state.look[1], state.look[2]);
+  camera.lookAt(lookTarget);
+
+  // Move and scale the central object
+  centralObject.position.x += (state.objPos[0] - centralObject.position.x) * 0.06;
+  centralObject.position.y += (state.objPos[1] - centralObject.position.y) * 0.06;
+  centralObject.position.z += (state.objPos[2] - centralObject.position.z) * 0.06;
+  const targetScale = state.objScale;
+  centralObject.scale.x += (targetScale - centralObject.scale.x) * 0.08;
+  centralObject.scale.y = centralObject.scale.x;
+  centralObject.scale.z = centralObject.scale.x;
+
+  // Rotate central object
+  centralObject.rotation.y = t * 0.15;
+  centralObject.rotation.x = t * 0.1;
+
+  // Cage tracks central
+  cage.position.copy(centralObject.position);
+  cage.scale.copy(centralObject.scale);
+  cage.rotation.y = -t * 0.08;
+  cage.rotation.x = t * 0.05;
+
+  // Rings
+  ring.position.copy(centralObject.position);
+  ring.scale.copy(centralObject.scale);
+  ring.rotation.z = t * 0.3;
+  ring.rotation.x = Math.PI / 2 + Math.sin(t * 0.4) * 0.3;
+
+  ring2.position.copy(centralObject.position);
+  ring2.scale.copy(centralObject.scale);
+  ring2.rotation.x = t * 0.2;
+  ring2.rotation.y = t * 0.15;
+
+  // Orbit satellites
+  satellites.forEach((sat) => {
+    const u = sat.userData;
+    u.angle += u.speedY * 0.005;
+    sat.position.x = centralObject.position.x + Math.cos(u.angle) * u.radius;
+    sat.position.z = centralObject.position.z + Math.sin(u.angle) * u.radius;
+    sat.position.y = centralObject.position.y + u.yOffset + Math.sin(t * u.speedY) * 0.3;
+    sat.rotation.x += u.rotSpeed.x;
+    sat.rotation.y += u.rotSpeed.y;
+  });
+
+  // Particles slow rotation
+  particles.rotation.y = t * 0.015;
+  particles.rotation.x = Math.sin(t * 0.05) * 0.1;
+
+  // Grid pulse
+  gridHelper.material.opacity = 0.08 + Math.sin(t * 0.5) * 0.04;
+
+  renderer.render(scene, camera);
+  requestAnimationFrame(animate);
+}
+animate();
+
+window.addEventListener('resize', () => {
+  camera.aspect = window.innerWidth / window.innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(window.innerWidth, window.innerHeight);
+});
+
+// ============================================================
+// LOADER
+// ============================================================
+const loader = document.getElementById('loader');
+const loaderFill = document.getElementById('loader-fill');
+const loaderNum = document.getElementById('loader-num');
+let loadProgress = 0;
+const loadInterval = setInterval(() => {
+  loadProgress += Math.random() * 6 + 2;
+  if (loadProgress > 100) loadProgress = 100;
+  loaderFill.style.width = `${loadProgress}%`;
+  loaderNum.textContent = `${String(Math.round(loadProgress)).padStart(3,'0')} / 100`;
+  if (loadProgress >= 100) {
+    clearInterval(loadInterval);
+    setTimeout(() => {
+      gsap.to(loader, {
+        opacity: 0,
+        duration: 1,
+        ease: 'power3.inOut',
+        onComplete: () => {
+          loader.style.display = 'none';
+          initRevealAnimations();
+        }
+      });
+      gsap.to(loader, {
+        clipPath: 'inset(100% 0 0 0)',
+        duration: 1.2,
+        ease: 'power4.inOut',
+      });
+    }, 400);
+  }
+}, 60);
+
+// ============================================================
+// PROJECTS
+// ============================================================
+const projects = [
+  { num: 'N°01', title: 'Eclipse', italic: 'audio',       tag: 'WebGL · Brand Site',      year: '2025' },
+  { num: 'N°02', title: 'Northern', italic: 'compass',    tag: 'Editorial · Motion',      year: '2025' },
+  { num: 'N°03', title: 'Atlas', italic: 'watches',       tag: 'E-commerce · 3D',         year: '2024' },
+  { num: 'N°04', title: 'Yara', italic: 'festival',       tag: 'Interactive · Sound',     year: '2024' },
+  { num: 'N°05', title: 'Halcyon', italic: 'studio',      tag: 'Identity · Site',         year: '2023' },
+  { num: 'N°06', title: 'Verge', italic: 'magazine',      tag: 'Publication · CMS',       year: '2023' },
+];
+const list = document.getElementById('projects-list');
+projects.forEach(p => {
+  const row = document.createElement('div');
+  row.className = 'project';
+  row.innerHTML = `
+    <div class="project-num">${p.num}</div>
+    <div class="project-title">${p.title} <span class="italic">${p.italic}</span></div>
+    <div class="project-tag">${p.tag}</div>
+    <div class="project-year">— ${p.year}</div>
+    <div class="project-arrow">→</div>
+  `;
+  list.appendChild(row);
+});
+
+// Skills
+const skills = [
+  'Three.js','React','Next.js','GSAP','WebGL','GLSL','TypeScript','Framer Motion',
+  'Blender','After Effects','Figma','Lenis','Cannon.js','WebGPU','Vue','Nuxt','Houdini'
+];
+const skillsTrack = document.getElementById('skills-track');
+const skillsAll = [...skills, ...skills, ...skills];
+skillsAll.forEach(s => {
+  const pill = document.createElement('div');
+  pill.className = 'skill-pill';
+  pill.textContent = s;
+  skillsTrack.appendChild(pill);
+});
+
+// ============================================================
+// GSAP REVEAL ANIMATIONS
+// ============================================================
+function initRevealAnimations() {
+  // Hero hero entrance — character stagger
+  gsap.from('.hero h1 .word', {
+    yPercent: 110,
+    duration: 1.4,
+    ease: 'power4.out',
+    stagger: 0.18,
+  });
+
+  gsap.from('.hero-tag', {
+    opacity: 0,
+    y: 20,
+    duration: 1,
+    delay: 0.4,
+    ease: 'power2.out',
+  });
+
+  gsap.from('.hero-bottom > *', {
+    opacity: 0,
+    y: 30,
+    duration: 1,
+    delay: 1.2,
+    stagger: 0.15,
+    ease: 'power2.out',
+  });
+
+  // Section titles
+  gsap.utils.toArray('.section-title').forEach(el => {
+    gsap.from(el, {
+      yPercent: 60,
+      opacity: 0,
+      duration: 1.2,
+      ease: 'power3.out',
+      scrollTrigger: { trigger: el, start: 'top 85%' },
+    });
+  });
+
+  // Section meta
+  gsap.utils.toArray('.section-meta').forEach(el => {
+    gsap.from(el, {
+      opacity: 0,
+      y: 30,
+      duration: 1,
+      delay: 0.3,
+      ease: 'power2.out',
+      scrollTrigger: { trigger: el, start: 'top 85%' },
+    });
+  });
+
+  // Project rows stagger
+  gsap.utils.toArray('.project').forEach((el) => {
+    gsap.from(el, {
+      x: -60,
+      opacity: 0,
+      duration: 1,
+      ease: 'power3.out',
+      scrollTrigger: { trigger: el, start: 'top 90%' },
+    });
+  });
+
+  // Process cards
+  gsap.utils.toArray('.process-card').forEach((el, i) => {
+    gsap.from(el, {
+      y: 60,
+      opacity: 0,
+      duration: 1,
+      delay: i * 0.1,
+      ease: 'power3.out',
+      scrollTrigger: { trigger: el, start: 'top 88%' },
+    });
+  });
+
+  // About reveal
+  gsap.from('[data-reveal]', {
+    opacity: 0,
+    y: 50,
+    duration: 1.4,
+    ease: 'power3.out',
+    scrollTrigger: { trigger: '[data-reveal]', start: 'top 80%' },
+  });
+
+  // Stats counter
+  gsap.utils.toArray('.stat-num').forEach(el => {
+    const target = parseInt(el.textContent);
+    gsap.fromTo(el,
+      { textContent: 0 },
+      {
+        textContent: target,
+        duration: 2.5,
+        ease: 'power2.out',
+        snap: { textContent: 1 },
+        scrollTrigger: { trigger: el, start: 'top 85%' },
+      }
+    );
+  });
+
+  // Contact headline
+  gsap.from('.contact-headline', {
+    opacity: 0,
+    y: 60,
+    duration: 1.4,
+    ease: 'power3.out',
+    scrollTrigger: { trigger: '.contact-headline', start: 'top 80%' },
+  });
+
+  // Stat side reveal
+  gsap.from('.stat', {
+    opacity: 0,
+    x: 40,
+    duration: 1,
+    stagger: 0.15,
+    ease: 'power3.out',
+    scrollTrigger: { trigger: '.about-side', start: 'top 80%' },
+  });
+}
+
+// ============================================================
+// CUSTOM CURSOR
+// ============================================================
+const cursorDot = document.getElementById('cursor-dot');
+const cursorRing = document.getElementById('cursor-ring');
+let cx = 0, cy = 0, rx = 0, ry = 0;
+
+window.addEventListener('mousemove', (e) => {
+  cx = e.clientX; cy = e.clientY;
+});
+
+function moveCursor() {
+  cursorDot.style.left = cx + 'px';
+  cursorDot.style.top = cy + 'px';
+  rx += (cx - rx) * 0.18;
+  ry += (cy - ry) * 0.18;
+  cursorRing.style.left = rx + 'px';
+  cursorRing.style.top = ry + 'px';
+  requestAnimationFrame(moveCursor);
+}
+moveCursor();
+
+document.querySelectorAll('a, .project, .skill-pill, .process-card').forEach(el => {
+  el.addEventListener('mouseenter', () => {
+    cursorDot.classList.add('hover');
+    cursorRing.classList.add('hover');
+    shaderUniforms.uHover.value = 1;
+  });
+  el.addEventListener('mouseleave', () => {
+    cursorDot.classList.remove('hover');
+    cursorRing.classList.remove('hover');
+    shaderUniforms.uHover.value = 0;
+  });
+});
+
+// ============================================================
+// LIVE CLOCK
+// ============================================================
+function updateClock() {
+  const now = new Date();
+  const h = String(now.getUTCHours()).padStart(2, '0');
+  const m = String(now.getUTCMinutes()).padStart(2, '0');
+  const s = String(now.getUTCSeconds()).padStart(2, '0');
+  const t = `${h}:${m}:${s} UTC`;
+  document.getElementById('hud-time').textContent = t;
+  const lt = document.getElementById('loader-time');
+  if (lt) lt.textContent = t;
+}
+setInterval(updateClock, 1000);
+updateClock();
+
+// ============================================================
+// SMOOTH ANCHORS
+// ============================================================
+document.querySelectorAll('[data-link]').forEach(link => {
+  link.addEventListener('click', (e) => {
+    e.preventDefault();
+    const target = document.querySelector(link.getAttribute('href'));
+    if (target) lenis.scrollTo(target, { offset: -40 });
+  });
+});
+</script>
+</body>
+</html>

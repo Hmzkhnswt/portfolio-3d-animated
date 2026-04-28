@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Hamza Ali — AI/ML Engineer</title>
+  <meta name="description" content="Hamza Ali — AI/ML Engineer. Building production ML systems, RAG pipelines, and cloud-scale AI applications." />
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+
+<!-- Loader -->
+<div class="loader" id="loader">
+  <div class="loader-top">
+    <span>HAMZA / 26</span>
+    <span id="loader-time">00:00:00 UTC</span>
+  </div>
+  <div class="loader-center">
+    <div class="loader-logo">Hamza.Ali</div>
+    <div class="loader-bar"><div class="loader-fill" id="loader-fill"></div></div>
+    <div class="loader-num" id="loader-num">000 / 100</div>
+  </div>
+  <div class="loader-bottom">
+    <span>INITIALIZING SYSTEMS</span>
+    <span>v.3.0.26</span>
+  </div>
+</div>
+
+<!-- WebGL canvas -->
+<canvas id="webgl"></canvas>
+<div class="vignette"></div>
+<div class="scanlines"></div>
+<div class="grain"></div>
+
+<!-- Corner brackets -->
+<div class="bracket tl"></div>
+<div class="bracket tr"></div>
+<div class="bracket bl"></div>
+<div class="bracket br"></div>
+
+<!-- Cursor -->
+<div class="cursor-dot" id="cursor-dot"></div>
+<div class="cursor-ring" id="cursor-ring"></div>
+
+<!-- HUD -->
+<div class="hud-corner hud-bl">
+  <div class="live">SYS / ONLINE</div>
+  <div id="hud-time">00:00:00 UTC</div>
+  <div>33.7215°N · 73.0433°E</div>
+</div>
+<div class="hud-corner hud-br">
+  <div>SCROLL <span id="hud-scroll">0%</span></div>
+  <div>CHAPTER <span id="hud-chapter">01</span> / 04</div>
+  <div id="hud-scene">SCENE — APPROACH</div>
+</div>
+
+<!-- Nav -->
+<nav>
+  <div class="logo"><span class="logo-mark"></span> HAMZA/ALI</div>
+  <div class="nav-links">
+    <a href="#work" data-link>Work</a>
+    <a href="#about" data-link>About</a>
+    <a href="#contact" data-link>Contact</a>
+  </div>
+  <button class="theme-toggle" id="theme-toggle" aria-label="Toggle theme">
+    <span class="theme-toggle-icon" id="theme-icon">◑</span>
+    <span class="theme-toggle-label" id="theme-label">LIGHT</span>
+  </button>
+</nav>
+
+<!-- Content -->
+<div class="content">
+
+  <!-- HERO -->
+  <section class="hero">
+    <div class="hero-tag">N°001 — AI/ML Engineer · MMXXVI</div>
+    <h1>
+      <div class="word"><span class="char">B</span><span class="char">u</span><span class="char">i</span><span class="char">l</span><span class="char">d</span><span class="char">i</span><span class="char">n</span><span class="char">g</span></div><br>
+      <div class="word"><span class="italic">intelligent</span></div><br>
+      <div class="word outline"><span class="char">s</span><span class="char">y</span><span class="char">s</span><span class="char">t</span><span class="char">e</span><span class="char">m</span><span class="char">s</span></div>
+    </h1>
+    <div class="hero-bottom">
+      <div class="hero-desc">
+        AI/ML Engineer with 3+ years of production experience designing and deploying end-to-end
+        machine learning systems across international markets.
+      </div>
+      <div class="hero-stats">
+        <div><strong>3+</strong><span>Years experience</span></div>
+        <div><strong>15+</strong><span>Projects shipped</span></div>
+        <div><strong>2</strong><span>Publications</span></div>
+      </div>
+    </div>
+    <div class="scroll-prompt">Scroll to explore</div>
+  </section>
+
+  <!-- Marquee -->
+  <div class="marquee">
+    <div class="marquee-track">
+      <span>PyTorch</span><span class="dot">✦</span>
+      <span><i>FastAPI</i></span><span class="dot">✦</span>
+      <span>LangChain</span><span class="dot">✦</span>
+      <span><i>RAG</i></span><span class="dot">✦</span>
+      <span>Docker</span><span class="dot">✦</span>
+      <span><i>Kubernetes</i></span><span class="dot">✦</span>
+      <span>GCP</span><span class="dot">✦</span>
+      <span><i>GSAP</i></span><span class="dot">✦</span>
+      <span>XGBoost</span><span class="dot">✦</span>
+      <span><i>Transformers</i></span><span class="dot">✦</span>
+      <span>MLflow</span><span class="dot">✦</span>
+      <span><i>Redis</i></span><span class="dot">✦</span>
+      <span>PyTorch</span><span class="dot">✦</span>
+      <span><i>FastAPI</i></span><span class="dot">✦</span>
+      <span>LangChain</span><span class="dot">✦</span>
+      <span><i>RAG</i></span><span class="dot">✦</span>
+      <span>Docker</span><span class="dot">✦</span>
+      <span><i>Kubernetes</i></span><span class="dot">✦</span>
+      <span>GCP</span><span class="dot">✦</span>
+      <span><i>GSAP</i></span><span class="dot">✦</span>
+      <span>XGBoost</span><span class="dot">✦</span>
+      <span><i>Transformers</i></span><span class="dot">✦</span>
+      <span>MLflow</span><span class="dot">✦</span>
+      <span><i>Redis</i></span><span class="dot">✦</span>
+    </div>
+  </div>
+
+  <!-- WORK -->
+  <section class="section-padding" id="work">
+    <div class="section-head">
+      <div>
+        <div class="section-num">[ N°002 / Selected Projects ]</div>
+        <div class="section-title">Recent <span class="italic">work</span></div>
+      </div>
+      <div class="section-meta">
+        A curated selection of digital experiences built between 2023 and 2026, spanning brand sites, product launches, and interactive installations.
+      </div>
+    </div>
+    <div class="projects-list" id="projects-list"></div>
+  </section>
+
+  <!-- PROCESS -->
+  <section class="section-padding">
+    <div class="section-head">
+      <div>
+        <div class="section-num">[ N°003 / Approach ]</div>
+        <div class="section-title">The <span class="italic">pipeline</span></div>
+      </div>
+      <div class="section-meta">
+        Every AI system follows the same rigorous arc — from raw data and research to trained models and cloud-scale deployment.
+      </div>
+    </div>
+    <div class="process-grid">
+      <div class="process-card">
+        <div class="process-num">PHASE 01</div>
+        <div class="process-title">Research <span class="italic">&amp; data</span></div>
+        <div class="process-desc">Deep dives into the problem domain, data acquisition, EDA, and feature engineering. Defining what good looks like before writing a single line of model code.</div>
+      </div>
+      <div class="process-card">
+        <div class="process-num">PHASE 02</div>
+        <div class="process-title">Model <span class="italic">&amp; train</span></div>
+        <div class="process-desc">Experimentation with ML/DL architectures, hyperparameter tuning, and evaluation. MLflow tracking, DVC versioning, and DagsHub for reproducibility.</div>
+      </div>
+      <div class="process-card">
+        <div class="process-num">PHASE 03</div>
+        <div class="process-title">Deploy <span class="italic">&amp; scale</span></div>
+        <div class="process-desc">FastAPI services, Docker containers, Kubernetes orchestration on GCP/AWS/Azure. CI/CD pipelines and real-time monitoring as first-class concerns.</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ABOUT -->
+  <section class="section-padding" id="about">
+    <div class="section-head">
+      <div>
+        <div class="section-num">[ N°004 / About ]</div>
+        <div class="section-title">The <span class="italic">engineer</span></div>
+      </div>
+    </div>
+    <div class="about-grid">
+      <div class="about-text" data-reveal>
+        I am Machine Learning and AI Engineer from Islamabad, Pakistan. Involved in developing <span class="highlight italic">Production Grade Systems with ML Pipelines and Cloud Infrastructures</span>. With over 3 years of Experience, I have created numerous production-level ML systems that have real world impact and daily life uses.
+      </div>
+      <div class="about-side">
+        <div class="stat">
+          <div class="stat-num">15</div>
+          <div class="stat-label">Projects in production</div>
+        </div>
+        <div class="stat">
+          <div class="stat-num">3</div>
+          <div class="stat-label">Years of experience</div>
+        </div>
+        <div class="stat">
+          <div class="stat-num">2</div>
+          <div class="stat-label">Published papers</div>
+        </div>
+      </div>
+    </div>
+    <div class="skills">
+      <div class="skills-track" id="skills-track"></div>
+    </div>
+  </section>
+
+  <!-- CONTACT -->
+  <section class="contact" id="contact">
+    <div class="section-head">
+      <div>
+        <div class="section-num">[ N°005 / Contact ]</div>
+        <div class="section-title">Get in <span class="italic">touch</span></div>
+      </div>
+    </div>
+    <div class="contact-headline">
+      Let's <span class="italic">build</span><br>
+      <a href="mailto:hamzaali@gmail.com">something</a>
+    </div>
+    <div class="contact-grid">
+      <div class="contact-item">
+        <div class="label">Email</div>
+        <a href="mailto:hamzaali@gmail.com">hamzaali@gmail.com</a>
+      </div>
+      <div class="contact-item">
+        <div class="label">LinkedIn</div>
+        <a href="https://linkedin.com/in/hamzaali" target="_blank" rel="noopener">linkedin.com/in/hamzaali</a>
+      </div>
+      <div class="contact-item">
+        <div class="label">GitHub</div>
+        <a href="https://github.com/hamzaali" target="_blank" rel="noopener">github.com/hamzaali</a>
+      </div>
+      <div class="contact-item">
+        <div class="label">Location</div>
+        <a href="#">Islamabad, PK</a>
+      </div>
+    </div>
+    <div class="footer">
+      <span>© 2026 Hamza Ali — AI/ML Engineer</span>
+      <span>Islamabad, Pakistan</span>
+    </div>
+  </section>
+
+</div>
+
+<!-- LIBRARIES -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@studio-freight/lenis@1.0.42/dist/lenis.min.js"></script>
+
+<!-- Project detail modal -->
+<div id="project-modal" class="proj-modal">
+  <div class="proj-modal-bg"></div>
+  <div class="proj-modal-panel">
+    <button class="proj-modal-close" id="proj-close">
+      <span>✕</span> <span class="close-label">CLOSE</span>
+    </button>
+    <div class="proj-modal-inner">
+      <div class="proj-modal-meta">
+        <div class="proj-modal-num" id="pm-num"></div>
+        <div class="proj-modal-tag" id="pm-tag"></div>
+        <div class="proj-modal-year" id="pm-year"></div>
+      </div>
+      <h2 class="proj-modal-title" id="pm-title"></h2>
+      <div class="proj-modal-divider"></div>
+      <div class="proj-modal-body">
+        <div class="proj-modal-section">
+          <div class="proj-modal-section-label">OVERVIEW</div>
+          <p class="proj-modal-desc" id="pm-desc"></p>
+        </div>
+        <div class="proj-modal-section">
+          <div class="proj-modal-section-label">KEY HIGHLIGHTS</div>
+          <ul class="proj-modal-bullets" id="pm-bullets"></ul>
+        </div>
+        <div class="proj-modal-section">
+          <div class="proj-modal-section-label">TECH STACK</div>
+          <div class="proj-modal-pills" id="pm-stack"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Application scripts — order matters: webgl exposes globals used by main -->
+<script src="js/webgl.js"></script>
+<script src="js/animations.js"></script>
+<script src="js/main.js"></script>
+
+</body>
+</html>
