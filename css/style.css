@@ -857,12 +857,12 @@ section {
 .project-year        { color: color-mix(in srgb, var(--fg) 70%, transparent); }
 .project-arrow       { color: color-mix(in srgb, var(--fg) 70%, transparent); }
 .stat-label          { color: color-mix(in srgb, var(--fg) 75%, transparent); }
-.hud-corner          { color: color-mix(in srgb, var(--fg) 65%, transparent); }
+.hud-corner          { color: color-mix(in srgb, var(--fg) 80%, transparent); }
 .loader-top,
-.loader-bottom       { color: color-mix(in srgb, var(--fg) 65%, transparent); }
-.contact-item .label { color: color-mix(in srgb, var(--fg) 72%, transparent); }
-.footer              { color: color-mix(in srgb, var(--fg) 60%, transparent); }
-.scroll-prompt       { color: color-mix(in srgb, var(--fg) 65%, transparent); }
+.loader-bottom       { color: color-mix(in srgb, var(--fg) 78%, transparent); }
+.contact-item .label { color: color-mix(in srgb, var(--fg) 78%, transparent); }
+.footer              { color: color-mix(in srgb, var(--fg) 72%, transparent); }
+.scroll-prompt       { color: color-mix(in srgb, var(--fg) 75%, transparent); }
 
 /* ============ PROJECT MODAL ============ */
 .proj-modal {
@@ -1074,8 +1074,27 @@ section {
 }
 
 /* ============ LIGHT-THEME SPECIFIC OVERRIDES ============ */
+
+/* mix-blend-mode: difference is designed for dark canvases. On a warm-white
+   page it inverts dark text into washed-out near-white. Disable it in light
+   mode so nav, HUD, and corner brackets render with explicit theme colors. */
+[data-theme="light"] nav,
+[data-theme="light"] .hud-corner,
+[data-theme="light"] .bracket {
+  mix-blend-mode: normal;
+}
+[data-theme="light"] .bracket {
+  border-color: var(--accent);
+}
+[data-theme="light"] nav a,
+[data-theme="light"] .logo {
+  color: var(--fg);
+}
+
+/* Bolden hero outline strokes in light mode for the same visual weight
+   the warm-white outline carried on dark. */
 [data-theme="light"] .hero h1 .outline {
-  -webkit-text-stroke: 2px var(--fg);
+  -webkit-text-stroke: 2.5px var(--fg);
   color: transparent;
 }
 
@@ -1089,6 +1108,11 @@ section {
 
 [data-theme="light"] .proj-modal-divider {
   background: linear-gradient(90deg, var(--accent), transparent);
+}
+
+/* Marquee borders/scanlines pop a little harder in light mode */
+[data-theme="light"] .marquee {
+  border-color: var(--line);
 }
 
 /* ============ THEME TOGGLE BUTTON ============ */
@@ -1105,7 +1129,7 @@ section {
   text-transform: uppercase;
   padding: 8px 16px;
   cursor: none;
-  transition: border-color 0.3s, color 0.3s;
+  transition: border-color 0.3s ease, color 0.3s ease, transform 0.3s ease, box-shadow 0.4s ease;
   mix-blend-mode: normal;
   position: relative;
   z-index: 101;
@@ -1113,6 +1137,7 @@ section {
 .theme-toggle:hover {
   border-color: var(--accent);
   color: var(--accent);
+  box-shadow: 0 0 0 1px var(--accent), 0 0 18px color-mix(in srgb, var(--accent) 35%, transparent);
 }
 .theme-toggle-icon {
   font-size: 14px;
@@ -1122,6 +1147,50 @@ section {
 }
 .theme-toggle:hover .theme-toggle-icon {
   transform: rotate(180deg);
+}
+
+/* Click-flash — short accented pulse triggered when the user toggles the theme. */
+.theme-toggle.flash { animation: theme-flash 0.6s cubic-bezier(0.16,1,0.3,1); }
+@keyframes theme-flash {
+  0%   { transform: scale(1);    border-color: var(--line);   color: var(--fg);     box-shadow: 0 0 0 0 transparent; }
+  30%  { transform: scale(1.18); border-color: var(--accent); color: var(--accent); box-shadow: 0 0 24px var(--accent); }
+  60%  { transform: scale(0.98); border-color: var(--accent); color: var(--accent); box-shadow: 0 0 12px var(--accent); }
+  100% { transform: scale(1);    border-color: var(--line);   color: var(--fg);     box-shadow: 0 0 0 0 transparent; }
+}
+.theme-toggle.flash .theme-toggle-icon {
+  animation: theme-icon-spin 0.6s cubic-bezier(0.16,1,0.3,1);
+}
+@keyframes theme-icon-spin {
+  0%   { transform: rotate(0); }
+  100% { transform: rotate(360deg); }
+}
+
+/* ============ THEME-SWAP SMOOTH TRANSITIONS ============ */
+/* Apply smooth color/background tweens to elements that change tint when
+   the theme switches. Fast enough not to disrupt micro-interactions. */
+nav,
+.hud-corner,
+.bracket,
+.skill-pill,
+.process-card,
+.project,
+.project-num,
+.project-tag,
+.project-year,
+.project-arrow,
+.project-title,
+.section-meta,
+.process-desc,
+.hero-desc,
+.contact-item .label,
+.contact-item a,
+.footer,
+.scroll-prompt,
+.proj-modal-panel,
+.proj-modal-close,
+.proj-modal-pill,
+.proj-modal-bg {
+  transition: color 0.4s ease, background 0.4s ease, border-color 0.4s ease;
 }
 
 /* Mobile: icon-only floating toggle */

@@ -64,11 +64,31 @@ function applyTheme(theme, animate) {
     });
   }
 
-  if (animate && typeof gsap !== 'undefined') {
-    gsap.fromTo('body',
-      { opacity: 0.6 },
-      { opacity: 1, duration: 0.4, ease: 'power2.out' }
-    );
+  if (animate) {
+    // Brief radial pulse on the toggle so the click feels acknowledged.
+    if (themeToggleBtn) {
+      themeToggleBtn.classList.remove('flash');
+      // Force reflow so the animation restarts on rapid double-clicks.
+      void themeToggleBtn.offsetWidth;
+      themeToggleBtn.classList.add('flash');
+      setTimeout(() => themeToggleBtn.classList.remove('flash'), 650);
+    }
+
+    // Quick canvas crossfade — gives the WebGL palette swap a soft landing
+    // without rewriting per-vertex buffers every frame.
+    if (typeof gsap !== 'undefined') {
+      const canvasEl = document.getElementById('webgl');
+      if (canvasEl) {
+        gsap.fromTo(canvasEl,
+          { opacity: 0.35, filter: 'blur(6px)' },
+          { opacity: 1, filter: 'blur(0px)', duration: 0.55, ease: 'power2.out' }
+        );
+      }
+      gsap.fromTo('body',
+        { opacity: 0.7 },
+        { opacity: 1, duration: 0.4, ease: 'power2.out' }
+      );
+    }
   }
 }
 
